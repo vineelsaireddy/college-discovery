@@ -1,0 +1,105 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String         @id @default(cuid())
+  name           String
+  email          String         @unique
+  password       String
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  reviews        Review[]
+  savedColleges  SavedCollege[]
+  savedComparisons SavedComparison[]
+}
+
+model College {
+  id              String         @id @default(cuid())
+  name            String
+  slug            String         @unique
+  location        String
+  state           String
+  type            String         // Engineering, Medical, Management, etc.
+  establishedYear Int
+  rating          Float
+  fees            Int            // Annual fees in INR
+  description     String
+  imageUrl        String?
+  website         String?
+  affiliation     String?        // AICTE, UGC, etc.
+  ranking         Int?           // NIRF ranking
+  ownership       String         // Government, Private, Public
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  courses         Course[]
+  placements      Placement[]
+  reviews         Review[]
+  savedBy         SavedCollege[]
+
+  @@index([name])
+  @@index([state])
+  @@index([type])
+  @@index([rating])
+  @@index([fees])
+}
+
+model Course {
+  id          String  @id @default(cuid())
+  name        String
+  duration    String  // "4 Years", "2 Years"
+  degree      String  // "B.Tech", "M.Tech", "MBA"
+  fees        Int     // Total fees for the course
+  collegeId   String
+  college     College @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+}
+
+model Placement {
+  id               String  @id @default(cuid())
+  year             Int
+  averagePackage   Int     // in LPA * 100 (e.g., 1200 = 12 LPA)
+  highestPackage   Int
+  medianPackage    Int?
+  placementRate    Float   // percentage (0-100)
+  topRecruiters    String  // comma-separated
+  collegeId        String
+  college          College @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id          String   @id @default(cuid())
+  rating      Float
+  title       String
+  content     String
+  category    String   // "Academics", "Infrastructure", "Placements", "Campus Life"
+  createdAt   DateTime @default(now())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collegeId   String
+  college     College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+}
+
+model SavedCollege {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collegeId   String
+  college     College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, collegeId])
+}
+
+model SavedComparison {
+  id          String   @id @default(cuid())
+  name        String?
+  collegeIds  String   // Comma-separated or JSON string of college IDs
+  createdAt   DateTime @default(now())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
